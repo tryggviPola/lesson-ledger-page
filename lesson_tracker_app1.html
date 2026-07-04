@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lessons">
+<link id="touch-icon" rel="apple-touch-icon">
+<title>Lessons</title>
+<style>
+  :root {
+    --accent:    #CC785C;
+    --accent-dk: #A85A40;
+    --accent-lt: #F5EDE8;
+    --bg:        #F9F8F6;
+    --card:      #FFFFFF;
+    --border:    #E8E6E1;
+    --text:      #1A1A1A;
+    --muted:     #8A8580;
+    --green:     #2A7D5A;
+    --green-lt:  #EDF7F2;
+    --red:       #B83232;
+    --red-lt:    #FDF0F0;
+    --blue:      #2D5FA6;
+    --blue-lt:   #EEF3FB;
+    --safe-top:  env(safe-area-inset-top, 0px);
+    --safe-btm:  env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; overscroll-behavior: none;
+  }
+
+  /* Top bar */
+  .topbar {
+    background: var(--card); border-bottom: 1px solid var(--border);
+    padding: calc(var(--safe-top) + 14px) 20px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 20;
+  }
+  .topbar-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .topbar-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+    display: inline-block; margin-left: 6px; vertical-align: middle; margin-bottom: 2px;
+  }
+
+  /* Tabs */
+  .tabs-wrap {
+    background: var(--card); border-bottom: 1px solid var(--border);
+    overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .tabs-wrap::-webkit-scrollbar { display: none; }
+  .tabs { display: flex; padding: 0 16px; gap: 4px; min-width: max-content; }
+  .tab {
+    padding: 10px 18px; font-size: 14px; font-weight: 500;
+    border: none; background: none; cursor: pointer; color: var(--muted);
+    border-bottom: 2.5px solid transparent; white-space: nowrap;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .tab-add { font-size: 22px; padding: 6px 14px; line-height: 1.8; border-bottom: 2.5px solid transparent; }
+
+  /* Content */
+  .content {
+    padding: 20px 16px;
+    padding-bottom: calc(var(--safe-btm) + 32px);
+    max-width: 480px; margin: 0 auto;
+  }
+
+  /* Balance card */
+  .balance-card {
+    background: var(--card); border-radius: 20px; border: 1px solid var(--border);
+    padding: 22px 24px; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .balance-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+  .balance-num { font-size: 52px; font-weight: 700; line-height: 1; letter-spacing: -2px; }
+  .balance-warn { font-size: 12px; font-weight: 500; margin-top: 6px; }
+  .balance-icon {
+    width: 56px; height: 56px; border-radius: 16px; background: var(--accent-lt);
+    display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0;
+  }
+
+  /* Action buttons */
+  .action-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  .btn-action {
+    flex: 1; border: none; border-radius: 14px; padding: 15px 10px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: inherit;
+  }
+  .btn-action:active { opacity: 0.75; transform: scale(0.98); }
+  .btn-lesson  { background: var(--accent); color: #fff; }
+  .btn-payment { background: var(--blue-lt); color: var(--blue); }
+
+  /* Panels */
+  .panel {
+    background: var(--card); border-radius: 20px; border: 1px solid var(--border);
+    padding: 20px; margin-bottom: 16px;
+    animation: slideIn 0.16s ease-out;
+  }
+  @keyframes slideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+  .panel-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.2px; }
+
+  /* Fields */
+  .field { margin-bottom: 12px; }
+  .field label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); display: block; margin-bottom: 5px; font-weight: 500; }
+  .field input {
+    width: 100%; padding: 12px 14px;
+    border: 1px solid var(--border); border-radius: 12px;
+    font-size: 16px; background: var(--bg); color: var(--text);
+    outline: none; font-family: inherit;
+    -webkit-appearance: none;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .field input[type="date"] { color: var(--text); }
+
+  /* Date helper chip */
+  .date-chips { display: flex; gap: 6px; margin-bottom: 5px; }
+  .chip {
+    font-size: 12px; padding: 4px 10px; border-radius: 20px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--muted); cursor: pointer; font-family: inherit;
+  }
+  .chip.selected { background: var(--accent-lt); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+
+  /* Status buttons */
+  .status-row { display: flex; gap: 10px; margin-top: 4px; }
+  .status-btn {
+    flex: 1; padding: 15px 10px; border-radius: 12px; border: none;
+    font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .status-btn:active { opacity: 0.75; transform: scale(0.98); }
+  .btn-done   { background: var(--green-lt); color: var(--green); }
+  .btn-cancel { background: var(--red-lt);   color: var(--red); }
+
+  .panel-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+  .btn-ghost { background: none; border: none; color: var(--muted); font-size: 15px; cursor: pointer; padding: 10px 14px; font-family: inherit; }
+  .btn-save  { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 11px 22px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-save:active { opacity: 0.8; }
+
+  /* History */
+  .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 500; margin-bottom: 10px; }
+  .history-item {
+    background: var(--card); border-radius: 14px; border: 1px solid var(--border);
+    padding: 13px 16px; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .h-icon {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .h-done    { background: var(--green-lt); color: var(--green); font-weight: 700; }
+  .h-cancel  { background: var(--red-lt);   color: var(--red);   font-weight: 700; }
+  .h-payment { background: var(--blue-lt);  color: var(--blue);  }
+  .h-body { flex: 1; min-width: 0; }
+  .h-title { font-size: 15px; font-weight: 500; letter-spacing: -0.1px; }
+  .h-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .h-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+  .h-date { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .del-btn { background: none; border: none; color: var(--border); font-size: 20px; cursor: pointer; padding: 0; line-height: 1; }
+  .del-btn:active { color: var(--red); }
+
+  .empty { text-align: center; color: var(--muted); font-size: 15px; padding: 48px 0; line-height: 1.7; }
+
+  /* Add student inline */
+  .student-panel { display: none; padding: 16px 20px; background: var(--card); border-bottom: 1px solid var(--border); }
+  .student-panel.open { display: block; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-title">Lessons<span class="topbar-dot"></span></span>
+</div>
+
+<div class="tabs-wrap"><div class="tabs" id="tabs"></div></div>
+
+<div id="student-panel" class="student-panel">
+  <div style="font-size:15px;font-weight:700;margin-bottom:12px">Add student</div>
+  <div class="field"><input type="text" id="new-name-input" placeholder="Student name" /></div>
+  <div class="panel-footer" style="margin-top:0">
+    <button class="btn-ghost" onclick="closeStudentPanel()">Cancel</button>
+    <button class="btn-save" onclick="addStudent()">Add</button>
+  </div>
+</div>
+
+<div class="content"><div id="app"></div></div>
+
+<script>
+const KEY = "lt_v3";
+let S = { students:[], lessons:{}, payments:{} };
+let aid=null, showL=false, showP=false;
+
+function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function today() { return new Date().toISOString().split("T")[0]; }
+function yesterday() {
+  const d=new Date(); d.setDate(d.getDate()-1); return d.toISOString().split("T")[0];
+}
+function fmt(d) {
+  const dt = new Date(d+"T12:00:00");
+  const t = today();
+  const y = yesterday();
+  if(d===t) return "Today";
+  if(d===y) return "Yesterday";
+  return dt.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+}
+
+function load() {
+  try { const r=localStorage.getItem(KEY); if(r) S=JSON.parse(r); } catch(e){}
+  if(!S.students) S.students=[];
+  aid=S.students.length?S.students[0].id:null;
+}
+function save() { try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){} }
+function bal(sid) {
+  const paid=(S.payments[sid]||[]).reduce((a,p)=>a+p.count,0);
+  const done=(S.lessons[sid]||[]).filter(l=>l.status==="done").length;
+  return paid-done;
+}
+
+/* Home screen icon */
+function makeIcon() {
+  const c=document.createElement("canvas"); c.width=180; c.height=180;
+  const x=c.getContext("2d");
+  const r=40;
+  x.beginPath();
+  x.moveTo(r,0); x.lineTo(180-r,0); x.quadraticCurveTo(180,0,180,r);
+  x.lineTo(180,180-r); x.quadraticCurveTo(180,180,180-r,180);
+  x.lineTo(r,180); x.quadraticCurveTo(0,180,0,180-r);
+  x.lineTo(0,r); x.quadraticCurveTo(0,0,r,0); x.closePath();
+  x.fillStyle="#CC785C"; x.fill();
+  x.fillStyle="#fff";
+  x.font="700 64px -apple-system, BlinkMacSystemFont, sans-serif";
+  x.textAlign="center"; x.textBaseline="middle";
+  x.fillText("LL",90,98);
+  document.getElementById("touch-icon").href=c.toDataURL("image/png");
+}
+
+/* Tabs */
+function renderTabs() {
+  const el=document.getElementById("tabs"); el.innerHTML="";
+  S.students.forEach(s=>{
+    const b=document.createElement("button");
+    b.className="tab"+(s.id===aid?" active":"");
+    b.textContent=s.name;
+    b.onclick=()=>{ aid=s.id; showL=false; showP=false; render(); };
+    el.appendChild(b);
+  });
+  const a=document.createElement("button");
+  a.className="tab tab-add"; a.textContent="+"; a.onclick=toggleStudentPanel; el.appendChild(a);
+}
+function toggleStudentPanel() {
+  const el=document.getElementById("student-panel");
+  el.classList.toggle("open");
+  if(el.classList.contains("open")) document.getElementById("new-name-input").focus();
+}
+function closeStudentPanel() {
+  document.getElementById("student-panel").classList.remove("open");
+  document.getElementById("new-name-input").value="";
+}
+function addStudent() {
+  const n=document.getElementById("new-name-input").value.trim(); if(!n) return;
+  const s={id:uid(),name:n}; S.students.push(s); aid=s.id; save(); closeStudentPanel(); render();
+}
+
+/* Date chips helper */
+function dateChips(inputId) {
+  const t=today(), y=yesterday();
+  return `
+    <div class="date-chips">
+      <button class="chip selected" id="chip-today" onclick="setDate('${inputId}','${t}',this)">Today</button>
+      <button class="chip" id="chip-yesterday" onclick="setDate('${inputId}','${y}',this)">Yesterday</button>
+      <button class="chip" id="chip-other" onclick="pickOther('${inputId}',this)">Other date</button>
+    </div>`;
+}
+
+function setDate(inputId, val, btn) {
+  const el=document.getElementById(inputId);
+  el.value=val; el.style.display="none";
+  btn.closest(".date-chips").querySelectorAll(".chip").forEach(c=>c.classList.remove("selected"));
+  btn.classList.add("selected");
+}
+function pickOther(inputId, btn) {
+  const el=document.getElementById(inputId);
+  el.style.display="block"; el.focus(); el.click();
+  btn.closest(".date-chips").querySelectorAll(".chip").forEach(c=>c.classList.remove("selected"));
+  btn.classList.add("selected");
+}
+
+/* Main render */
+function render() {
+  renderTabs();
+
+  if(!aid) {
+    document.getElementById("app").innerHTML=`
+      <div class="empty" style="padding-top:80px">
+        No students yet.<br>Tap the <strong>+</strong> above to add your first one.
+      </div>`;
+    return;
+  }
+
+  const b=bal(aid);
+  let nc=b<=0?"var(--red)":b===1?"#D4760A":"var(--text)";
+  let warn=b<=0?`<div class="balance-warn" style="color:var(--red)">Time to collect payment</div>`
+           :b===1?`<div class="balance-warn" style="color:#D4760A">Last lesson — ask for payment</div>`:"";
+
+  const ls=(S.lessons[aid]||[]).map(l=>({...l,_t:"l"}));
+  const ps=(S.payments[aid]||[]).map(p=>({...p,_t:"p"}));
+  const hist=[...ls,...ps].sort((a,c)=>c.date.localeCompare(a.date)||c.id.localeCompare(a.id));
+
+  const histHTML=!hist.length
+    ?`<div class="empty">Nothing here yet.<br>Log a lesson or record a payment.</div>`
+    :hist.map(item=>{
+      if(item._t==="p") return `
+        <div class="history-item">
+          <div class="h-icon h-payment">💰</div>
+          <div class="h-body">
+            <div class="h-title">Payment — ${item.count} lessons</div>
+            ${item.note?`<div class="h-sub">${item.note}</div>`:""}
+          </div>
+          <div class="h-right">
+            <span class="h-date">${fmt(item.date)}</span>
+            <button class="del-btn" onclick="del('p','${item.id}')">×</button>
+          </div>
+        </div>`;
+      const d=item.status==="done";
+      return `
+        <div class="history-item">
+          <div class="h-icon ${d?"h-done":"h-cancel"}">${d?"✓":"✕"}</div>
+          <div class="h-body">
+            <div class="h-title">${d?"Lesson done":"Cancelled"}${item.chapter?" · "+item.chapter:""}</div>
+            ${item.note?`<div class="h-sub">${item.note}</div>`:""}
+          </div>
+          <div class="h-right">
+            <span class="h-date">${fmt(item.date)}</span>
+            <button class="del-btn" onclick="del('l','${item.id}')">×</button>
+          </div>
+        </div>`;
+    }).join("");
+
+  const lessonPanel=showL?`
+    <div class="panel">
+      <div class="panel-title">Log a lesson</div>
+      <div class="field">
+        <label>Date</label>
+        ${dateChips("lp-date")}
+        <input type="date" id="lp-date" value="${today()}" style="display:none" onchange="syncChip(this,'lp-date')" />
+      </div>
+      <div class="field"><label>Chapter / Unit</label><input type="text" id="lp-ch" placeholder="e.g. Unit 5" /></div>
+      <div class="field"><label>Note</label><input type="text" id="lp-no" placeholder="Optional" /></div>
+      <div class="status-row">
+        <button class="status-btn btn-done" onclick="saveLesson('done')">✓ Done</button>
+        <button class="status-btn btn-cancel" onclick="saveLesson('cancelled')">✕ Cancelled</button>
+      </div>
+      <div class="panel-footer"><button class="btn-ghost" onclick="toggle('l')">Close</button></div>
+    </div>`:"";
+
+  const payPanel=showP?`
+    <div class="panel" style="border-color:#C5D5EE">
+      <div class="panel-title">Payment received</div>
+      <div class="field">
+        <label>Date</label>
+        ${dateChips("pp-date")}
+        <input type="date" id="pp-date" value="${today()}" style="display:none" onchange="syncChip(this,'pp-date')" />
+      </div>
+      <div class="field"><label>Lessons paid</label><input type="number" id="pp-ct" value="4" min="1" max="20" /></div>
+      <div class="field"><label>Note</label><input type="text" id="pp-no" placeholder="Optional" /></div>
+      <div class="panel-footer">
+        <button class="btn-ghost" onclick="toggle('p')">Cancel</button>
+        <button class="btn-save" onclick="savePay()">Save</button>
+      </div>
+    </div>`:"";
+
+  document.getElementById("app").innerHTML=`
+    <div class="balance-card">
+      <div>
+        <div class="balance-label">Lessons remaining</div>
+        <div class="balance-num" style="color:${nc}">${b}</div>
+        ${warn}
+      </div>
+      <div class="balance-icon">📖</div>
+    </div>
+    <div class="action-row">
+      <button class="btn-action btn-lesson" onclick="toggle('l')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Log lesson
+      </button>
+      <button class="btn-action btn-payment" onclick="toggle('p')">💰 Payment</button>
+    </div>
+    ${lessonPanel}${payPanel}
+    <div class="section-label">History</div>
+    ${histHTML}
+    <div style="display:flex; justify-content:center; gap:8px; margin-top:28px;">
+      <button class="btn-ghost" onclick="renameStudent()">Rename student</button>
+      <button class="btn-ghost" onclick="removeStudent()">Remove student</button>
+    </div>
+  `;
+}
+
+function syncChip(input, inputId) {
+  /* when user picks from native date picker, keep "Other date" chip selected */
+  document.getElementById("chip-other")&&
+    document.querySelectorAll(".chip").forEach(c=>{
+      c.classList.toggle("selected", c.id==="chip-other");
+    });
+}
+
+function toggle(w) {
+  if(w==="l"){showL=!showL;showP=false;}else{showP=!showP;showL=false;}
+  render();
+}
+
+function getDateVal(id) {
+  const el=document.getElementById(id);
+  if(!el) return today();
+  // if hidden (chip selected), read its value; if visible, read directly
+  return el.value || today();
+}
+
+function saveLesson(status) {
+  const date=getDateVal("lp-date");
+  const ch=document.getElementById("lp-ch")?.value.trim()||"";
+  const no=document.getElementById("lp-no")?.value.trim()||"";
+  S.lessons[aid]=[{id:uid(),date,status,chapter:ch,note:no},...(S.lessons[aid]||[])];
+  showL=false; save(); render();
+}
+function savePay() {
+  const date=getDateVal("pp-date");
+  const ct=parseInt(document.getElementById("pp-ct")?.value)||4;
+  const no=document.getElementById("pp-no")?.value.trim()||"";
+  S.payments[aid]=[{id:uid(),date,count:ct,note:no},...(S.payments[aid]||[])];
+  showP=false; save(); render();
+}
+function del(type,id) {
+  if(type==="l") S.lessons[aid]=(S.lessons[aid]||[]).filter(x=>x.id!==id);
+  else S.payments[aid]=(S.payments[aid]||[]).filter(x=>x.id!==id);
+  save(); render();
+}
+
+function renameStudent() {
+  if(!aid) return;
+  const s=S.students.find(x=>x.id===aid); if(!s) return;
+  const n=prompt("Rename student:", s.name);
+  if(n===null) return;
+  const t=n.trim(); if(!t) return;
+  s.name=t; save(); render();
+}
+function removeStudent() {
+  if(!aid) return;
+  const s=S.students.find(x=>x.id===aid); if(!s) return;
+  if(!confirm(`Remove ${s.name} and all their lesson/payment history? This can't be undone.`)) return;
+  S.students=S.students.filter(x=>x.id!==aid);
+  delete S.lessons[aid]; delete S.payments[aid];
+  aid=S.students.length?S.students[0].id:null;
+  save(); render();
+}
+
+load(); makeIcon(); render();
+</script>
+</body>
+</html>
